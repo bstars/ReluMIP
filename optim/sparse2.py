@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from optim.partition import PartitionNode
 from optim.brcbnd import BranchAndBound
+from utils.config import Config
 
 """
 Implement an example of branch-and-bound method to find the sparsest vector in polyhedron
@@ -42,7 +43,7 @@ def element_bounds(A, b):
 			cvxpy.Minimize(x[i]),
 			[A @ x <= b]
 		)
-		p1.solve()
+		p1.solve(solver="Mosek")
 
 		p2 = cvxpy.Problem(
 			cvxpy.Maximize(x[i]),
