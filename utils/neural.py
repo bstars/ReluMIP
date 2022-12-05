@@ -39,4 +39,13 @@ class FCNet(nn.Module):
 # get_param_pair(FCNet("../data/net500_1.pth"))
 
 
+def load_net_1():
+	net = FCNet("../data/net500_1.pth")
+	return net
+
+def load_net_2():
+	net = FCNet("../data/net500_2.pth")
+	return net
+
+
 

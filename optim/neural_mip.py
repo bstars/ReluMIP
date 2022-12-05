@@ -28,6 +28,7 @@ def compute_bound(wbs, L, U):
 			if setted[i] = 0, then this relu unit is always dead in the given input range
 			otherwise, the state of this relu unit vary within the input range
 	"""
+	print("Computing activation bounds ... ")
 	Ls, Us = [L], [U]
 	setted_shape = np.sum( [w.shape[0] for (w,b) in wbs[:-1]] ).astype(int)
 	setted = np.ones([setted_shape, ]) * 0.5
@@ -40,14 +41,14 @@ def compute_bound(wbs, L, U):
 			x = cvxpy.Variable([n, ])
 			pub = cvxpy.Problem(
 				cvxpy.Maximize(w[j, :] @ x + b[j]),
-				[Ls[-1][j] <= x, x <= Us[-1][j]]
+				[Ls[-1] <= x, x <= Us[-1]]
 			)
 			pub.solve(solver=Config.cvxpy_solver)
 			ub.append(pub.value)
 
 			plb = cvxpy.Problem(
 				cvxpy.Minimize(w[j, :] @ x + b[j]),
-				[Ls[-1][j] <= x, x <= Us[-1][j]]
+				[Ls[-1] <= x, x <= Us[-1]]
 			)
 			plb.solve(solver=Config.cvxpy_solver)
 			lb.append(plb.value)
@@ -99,6 +100,8 @@ def mip_constraints_from_nn(wbs, L, U):
 	"""
 
 	Ls, Us, setted = compute_bound(wbs, L, U)
+
+	print("Constructing relu constraints")
 	beta_shape = np.sum([w.shape[0] for (w, b) in wbs[:-1]]).astype(int)
 
 	f = cvxpy.Variable([wbs[0][0].shape[1]])
@@ -109,7 +112,7 @@ def mip_constraints_from_nn(wbs, L, U):
 	setted0 = setted < 0.3
 	if np.sum(setted0) > 0: constraints.append( beta[setted0] == 0. )
 	setted1 = setted > 0.7
-	if np.sum(setted1) > 0: constraints.append(beta[setted0] == 0.)
+	if np.sum(setted1) > 0: constraints.append(beta[setted1] == 1.)
 
 	beta_start = 0
 	for i, (w, b) in enumerate(wbs):

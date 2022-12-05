@@ -5,8 +5,23 @@ import numpy as np
 from optim.partition import PartitionNode
 
 class BranchAndBound:
-	def __init__(self, root:PartitionNode):
+	def __init__(self, root:PartitionNode, early_terminate=None, additional_prune=None):
+		"""
+		@param root: A root node with type PartitionNode
+		@param early_terminate:
+			A function (lambda lower_bound, upper_bound -> bool)
+			If the global lower bound and upper bound satisfies some condition,
+			we can terminated the bnb early.
+			e.g. feasibility problem
+		@param additional_prune:
+			a function (lambda lower_bound, upper_bound -> bool)
+			If the node's lower bound and upper bound satisfies some condition,
+			we can prune this node.
+			e.g. The lower bound in this node is larger than some threshold
+		"""
 		self.root = root
+		self.early_terminate = early_terminate
+		self.additional_prune = additional_prune
 
 	def partition_leaf(self, node : PartitionNode):
 		"""
@@ -84,9 +99,8 @@ class BranchAndBound:
 			a feasible point that achieves the global optimal
 		"""
 		lb, ub, xub = self.root.compute_bounds()
-
 		if lb == np.inf:
-			return None, np.inf, [], []
+			return None, None, [], []
 
 		self.root.lb = lb; self.root.ub = ub; self.root.xub = xub
 
@@ -103,9 +117,12 @@ class BranchAndBound:
 
 			node, new_fringe = self.select_partition(fringes)
 
-
 			# the gap is guaranteed
 			if np.abs(ub - lb) <= eps or node is None:
+				return ub, xub, np.array(lb_history), np.array(ub_history)
+
+			# early stop
+			if self.early_terminate is not None and self.early_terminate(lb, ub):
 				return ub, xub, np.array(lb_history), np.array(ub_history)
 
 			p1, p2 = self.partition_leaf(node)
